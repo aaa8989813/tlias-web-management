@@ -30,7 +30,7 @@ src/main/java/com/itheima/
   utils/            JWT、用户上下文、OSS
 src/main/resources/com/itheima/mapper/  动态 SQL 与关联映射
 src/test/java/                         自动化测试
-sql/schema.sql                        不含数据的建表脚本
+sql/tlias.sql                         项目原始表结构（无数据，已移除删表语句）
 ```
 
 ## 本地运行
@@ -44,17 +44,19 @@ sql/schema.sql                        不含数据的建表脚本
 ```sql
 CREATE DATABASE tlias CHARACTER SET utf8mb4;
 USE tlias;
-SOURCE /absolute/path/to/tlias-web-management/sql/schema.sql;
+SOURCE /absolute/path/to/tlias-web-management/sql/tlias.sql;
 ```
 
-`schema.sql` 根据当前实体和 Mapper 整理，仅用于新的空数据库，不是已有数据库的迁移脚本，也不会导入个人数据。初始化后没有账号或统计数据，需要自行创建演示数据。可在本地 SQL 客户端创建首个登录账号，将下例的占位密码替换为自己的本地演示密码：
+`tlias.sql` 来自项目数据库导出的实际表结构，包含部门、员工、工作经历、班级、学员及两类日志，共 7 张表，不包含业务数据。发布时移除了导出连接信息和 `DROP TABLE` 语句，保留原始字段、约束、索引及自增值；使用 `utf8mb4_0900_ai_ci` 排序规则，需要 MySQL 8.0 或以上版本。
+
+此文件替代此前根据代码整理的 `schema.sql`，两者不要重复导入。仅在新的空数据库中执行；已有表会报错，不会自动覆盖，也不作为已有数据库的迁移脚本。初始化后没有登录账号或统计数据，需要自行创建演示数据。可在本地 SQL 客户端创建首个账号，将下例的占位密码替换为自己的本地演示密码（手机号为虚构示例）：
 
 ```sql
-INSERT INTO emp (username, password, name, create_time, update_time)
-VALUES ('demo', '<your-local-demo-password>', '演示用户', NOW(), NOW());
+INSERT INTO emp (username, password, name, gender, phone, create_time, update_time)
+VALUES ('demo', '<your-local-demo-password>', '演示用户', 1, '00000000000', NOW(), NOW());
 ```
 
-当前登录逻辑仍按教学实现直接比较密码。脚本不提供默认密码，新建员工也不会自动获得默认登录密码；请仅使用本地演示数据。密码哈希、角色权限等尚待补充，不应直接部署为公网业务系统。
+当前登录逻辑仍按教学实现直接比较密码。原始教学表结构中，员工密码字段的默认值为 `123456`；未显式设置密码的新员工会使用该值，但导入脚本本身不会创建任何账号。请自行设置演示密码，仅使用本地演示数据。密码哈希、角色权限等尚待补充，不应直接部署为公网业务系统。
 
 ### 2. 配置环境变量
 
@@ -130,6 +132,6 @@ Content-Type: application/json
 - 避免员工密码出现在 JSON 返回值和 Lombok 生成的 `toString()` 中。
 - 为 Lombok 注解处理器补充版本，修复构建时找不到生成方法的问题。
 - 发布副本移除本机密码、云凭据、旧示例令牌和绝对日志路径，JWT 签名密钥改由环境变量提供。
-- 增加 JWT 和 Filter 回归测试；整理运行说明及无真实数据的数据库建表脚本。
+- 增加 JWT 和 Filter 回归测试；整理运行说明，并使用项目实际 SQL 表结构作为数据库初始化脚本。
 
 现有代码仍保留部分教学示例。后续可继续完善参数校验、密码哈希、权限控制、违纪次数与扣分规则以及数据库集成测试。当前仓库不声称已具备生产级安全或并发能力。
